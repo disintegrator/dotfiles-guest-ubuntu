@@ -68,6 +68,15 @@ run = [
 [bootstrap.user]
 login_shell = "/usr/bin/zsh"
 
+# mise sets the login shell with a plain `chsh`, which asks PAM for the user's
+# password even where sudo is passwordless (OrbStack). Set it as root first,
+# so sudo's own policy decides whether to prompt, and mise sees it already set.
+[bootstrap.hooks.pre-user]
+description = "Set the login shell to zsh via sudo"
+run = [
+  '[ "$(getent passwd "$USER" | cut -d: -f7)" = /usr/bin/zsh ] || sudo chsh -s /usr/bin/zsh "$USER"',
+]
+
 [bootstrap.services.tailscaled]
 state = "running"
 enabled = true
