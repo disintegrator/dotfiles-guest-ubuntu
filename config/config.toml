@@ -16,6 +16,9 @@ minimum_release_age_excludes = [
   "npm:@getpaseo/cli",
 ]
 
+[settings.ruby]
+compile = false
+
 [bootstrap.files."/etc/apt/apt.conf.d/99-no-recommends"]
 phase = "pre-packages"
 owner = "root"
