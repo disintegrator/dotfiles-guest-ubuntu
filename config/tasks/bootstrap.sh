@@ -268,6 +268,37 @@ start_services() {
 }
 start_services
 
+# Offer to log in to each agent harness, one at a time. Skips any that are
+# already logged in, and the whole step when there is no TTY to prompt on.
+harness_logins() {
+  if [[ ! -t 0 ]]; then
+    info "No TTY; skipping harness logins. Run 'mise run bootstrap' interactively to log in."
+    return
+  fi
+
+  if command -v claude >/dev/null; then
+    if claude auth status --json 2>/dev/null | jq -e '.loggedIn' >/dev/null 2>&1; then
+      info "Claude Code already logged in"
+    elif gum confirm --affirmative "Log in" --negative "Skip" "Log in to Claude Code now?"; then
+      claude auth login || warn "Claude Code login failed. Run 'claude auth login' to retry."
+    else
+      info "Skipped Claude Code login. Run 'claude auth login' later."
+    fi
+  fi
+
+  if command -v opencode >/dev/null; then
+    if opencode auth list --format json 2>/dev/null \
+        | jq -e 'any(.[]; .id == "openai" and (.connections | length > 0))' >/dev/null 2>&1; then
+      info "OpenCode already logged in to OpenAI"
+    elif gum confirm --affirmative "Log in" --negative "Skip" "Log in to OpenAI in OpenCode now?"; then
+      opencode auth login openai || warn "OpenCode login failed. Run 'opencode auth login openai' to retry."
+    else
+      info "Skipped OpenCode login. Run 'opencode auth login openai' later."
+    fi
+  fi
+}
+harness_logins
+
 print_tailscale() {
   if ! status=$(tailscale status --self --json 2>/dev/null); then
     err "Expected Tailscale to be running but it was not. Boostrap script may be broken."
