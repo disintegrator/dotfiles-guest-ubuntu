@@ -184,6 +184,12 @@ export UV_SYSTEM_CERTS=1
 export NODE_USE_ENV_PROXY=1
 export SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
 export REQUESTS_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
+# Placeholders that iron-proxy swaps for the real secrets on the way out.
+# The guest never holds the real tokens.
+export GITHUB_TOKEN="__secret_github_token"
+export GH_TOKEN="__secret_github_token"
+export MISE_GITHUB_TOKEN="__secret_github_token"
+export OPENROUTER_KEY="__secret_openrouter_key"
 EOF2
 )" || true
 
@@ -200,6 +206,10 @@ UV_SYSTEM_CERTS=1
 NODE_USE_ENV_PROXY=1
 SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+GITHUB_TOKEN=__secret_github_token
+GH_TOKEN=__secret_github_token
+MISE_GITHUB_TOKEN=__secret_github_token
+OPENROUTER_KEY=__secret_openrouter_key
 EOF2
 )"; then
     systemctl --user daemon-reload
