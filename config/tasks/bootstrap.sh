@@ -24,6 +24,20 @@ reboot_needed=0
 heading() { gum style --foreground "$pink" --bold "$1"; }
 kv()      { printf '  %s  %s\n' "$(gum style --foreground 240 --width 10 "$1")" "$(gum style --bold "$2")"; }
 
+# write_root_file PATH CONTENT: write as root only when the content differs.
+# Returns 0 when the file changed, 1 when it was already up to date.
+write_root_file() {
+  local path=$1 content=$2
+  if [[ -f $path ]] && [[ "$(<"$path")" == "$content" ]]; then
+    return 1
+  fi
+  sudo install -d -m 0755 "$(dirname "$path")"
+  printf '%s\n' "$content" | sudo tee "$path" >/dev/null
+  sudo chmod 0644 "$path"
+  info "Wrote" path "$path"
+  return 0
+}
+
 docker_post() {
   if ! getent group docker >/dev/null; then
     sudo groupadd docker
@@ -52,6 +66,26 @@ tmp_on_disk() {
   fi
 }
 tmp_on_disk
+
+# Trim free blocks daily at a fixed time instead of Ubuntu's default weekly
+# randomized run. Mirrors the drop-in on the existing devbox.
+fstrim_schedule() {
+  if write_root_file /etc/systemd/system/fstrim.timer.d/override.conf "$(cat <<EOF2
+[Timer]
+OnCalendar=
+OnCalendar=*-*-* 04:00:00 UTC
+RandomizedDelaySec=0
+AccuracySec=1min
+EOF2
+)"; then
+    sudo systemctl daemon-reload
+  fi
+  if ! systemctl is-enabled --quiet fstrim.timer 2>/dev/null || ! systemctl is-active --quiet fstrim.timer; then
+    sudo systemctl enable --now fstrim.timer >/dev/null 2>&1
+    info "Enabled fstrim.timer"
+  fi
+}
+fstrim_schedule
 
 # Optionally route the machine through the iron-proxy gateway. This relies on
 # the host running iron-proxy with a tunnel listener (see dotfiles-host), so it
@@ -130,20 +164,6 @@ proxy_setup() {
     proxy_url="http://${gateway}:${port}"
     info "Using proxy" url "$proxy_url"
   fi
-
-  # write_root_file PATH CONTENT: write as root only when the content differs.
-  # Returns 0 when the file changed, 1 when it was already up to date.
-  write_root_file() {
-    local path=$1 content=$2
-    if [[ -f $path ]] && [[ "$(<"$path")" == "$content" ]]; then
-      return 1
-    fi
-    sudo install -d -m 0755 "$(dirname "$path")"
-    printf '%s\n' "$content" | sudo tee "$path" >/dev/null
-    sudo chmod 0644 "$path"
-    info "Wrote" path "$path"
-    return 0
-  }
 
   write_root_file "$apt_conf" "$(cat <<EOF2
 Acquire::http::Proxy "${proxy_url}";
