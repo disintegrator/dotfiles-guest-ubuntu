@@ -174,7 +174,7 @@ hunk = "latest"
 jq = "latest"
 neovim = "latest"
 node = { version = "lts", auto_update = true }
-"npm:@getpaseo/cli" = { version = "latest", auto_update = "true" }
+"npm:@getpaseo/cli" = { version = "latest", auto_update = true }
 opencode = { version = "latest", allow_builds = ["@opencode/cli"] }
 pitchfork = "latest"
 ripgrep = "latest"
